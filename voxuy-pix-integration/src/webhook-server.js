@@ -54,7 +54,14 @@ function mapearParadiseParaVoxuy(payload) {
     status: statusVoxuy,
     paymentType: PAYMENT_TYPE.PIX,
     date: payload.timestamp ?? payload.date ?? payload.created_at ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
-    metadata: payload.metadata ?? payload.meta ?? (payload.description ? { description: payload.description } : undefined),
+    metadata: (() => {
+      const base = payload.metadata ?? payload.meta ?? {};
+      const extra = {};
+      if (payload.product?.name) extra.produto_paradise = payload.product.name;
+      if (payload.product?.hash) extra.produto_paradise_codigo = payload.product.hash;
+      if (payload.tracking?.product_hash) extra.product_hash = payload.tracking.product_hash;
+      return Object.keys(extra).length ? { ...base, ...extra } : base;
+    })(),
   };
 }
 

@@ -269,10 +269,14 @@ Você já fez a maior parte na primeira conversa. Só conferir:
 
    **Seu `.env` já está com os dados da Voxuy (webhook URL, token, plan ID e, se usar, custom event ID).** Não é preciso alterar nada aí para o fluxo funcionar.
 
-### Passo 3.2 – Funil de mensagens
+### Passo 3.2 – Funil de mensagens (e erro “Mensagem não configurada no funil”)
 
-1. No evento escolhido, cadastre as mensagens do funil (textos, horários, variáveis).  
-2. Use as variáveis da venda (nome, valor, **link do PIX**, etc.) que a API envia – por exemplo campos do **metadata** ou os que a Voxuy disponibiliza para “Venda → Campo metadata (API)”.
+1. **Automações** → **Funil de conversão** → selecione o **Produto** (ex.: Produto01) e o **evento** (ex.: **Pix** → **Gerado**).  
+2. Cadastre pelo menos uma **Mensagem**: clique no **+** → **Mensagem** → preencha **Nome de referência** e o **texto** em “Digite sua mensagem aqui”. A Voxuy grava **automaticamente** (na tela aparece “Dados salvos automaticamente”; não há botão Salvar). Feche o bloco com o **X** quando terminar.  
+3. **Ligue os blocos:** a Voxuy só considera que o funil tem mensagem se o **Início** estiver **conectado** ao bloco de mensagem. Arraste a **linha** que sai do “Início” (do ponto **Então**) até o bloco da mensagem (“Obrigado!”). Sem essa ligação, a Voxuy mostra: *“Não existem mensagens configuradas no Funil de conversão do produto Produto01 e evento Pix gerado”*.  
+4. Use as variáveis da venda (nome, valor, **Código Pix**, **Link Pix**) em “Venda” / “Venda - Pix” no ícone **<>** para personalizar o texto.
+
+Referência: [Funil de conversão – Voxuy](https://intercom.help/voxuy/pt-BR/articles/6965226-funil-de-conversao).
 
 ### Passo 3.3 – Integração API Voxuy (só conferir; não é onde você coloca sua URL)
 
@@ -285,10 +289,12 @@ Você já fez a maior parte na primeira conversa. Só conferir:
 
 Na Voxuy: **Configurações** (engrenagem) → **Integrações** → **API VOXUY**. Lá aparecem a URL da Voxuy e o Token. Só confira se são os mesmos do seu `.env` (webhook URL e token). **Não** digite a URL api.securitysw.online na Voxuy — essa URL fica só na Paradise.
 
-### Passo 3.4 – Plano
+### Passo 3.4 – Plano (e “só Produto01” ou todos?)
 
-1. **Produtos** → seu produto → plano com ID `7e50b0e6-3554-4b10-84c4-0bc7d7`.  
-2. Só conferir se esse plano está ativo e é o que você quer usar no funil.
+A API envia **todas** as transações PIX da Paradise para o **mesmo** plano (o que está no `.env`). Esse plano pertence a **um** produto na Voxuy (ex.: Produto01). Ou seja: não importa qual produto da Paradise gerou o PIX (ex.: “Taxa de verificação” ou outro) — tudo cai no mesmo produto/plano na Voxuy. Se você quiser **a mesma mensagem para todo PIX gerado**, esse comportamento é o correto: um funil “Pix gerado” nesse produto atende todos. O nome/código do produto da Paradise passa a ir no **metadata** (ex.: `produto_paradise`, `produto_paradise_codigo`) para você ver no relatório qual foi a oferta.
+
+1. **Produtos** → confira a qual **produto** o plano `7e50b0e6-3554-4b10-84c4-0bc7d7` está vinculado (provavelmente Produto01).  
+2. O funil “Pix gerado” precisa estar configurado **nesse** produto. Se aparecer “não tem fluxo” mesmo com o fluxo criado, confira na Voxuy: (a) esse plano é mesmo do Produto01; (b) o funil está em **Funil de conversão** → Produto01 → evento **Pix** → **Gerado**; (c) a ligação Início → mensagem está feita e as mensagens estão preenchidas.
 
 ### Passo 3.5 – Chat do atendente (se usar atendente humano)
 
