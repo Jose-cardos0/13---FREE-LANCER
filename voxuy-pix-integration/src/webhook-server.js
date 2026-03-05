@@ -160,6 +160,8 @@ app.post('/webhook/voxuy/pix', async (req, res) => {
  * Aceita o payload no formato da API/webook Paradise: reference, customer { name, email, phone, document }, amount (centavos), etc.
  */
 app.post('/webhook/voxuy/paradise', async (req, res) => {
+  // Log para você ver no pm2 logs se o payload chegou
+  console.log('[Paradise] Postback recebido:', JSON.stringify(req.body, null, 2));
   try {
     const body = mapearParadiseParaVoxuy(req.body);
     if (!body.clientPhoneNumber) {
@@ -170,15 +172,17 @@ app.post('/webhook/voxuy/paradise', async (req, res) => {
     }
     const resultado = await enviarTransacao(body);
     if (resultado.success) {
+      console.log('[Paradise] Enviado para Voxuy com sucesso. Telefone:', body.clientPhoneNumber);
       return res.status(200).json({ ok: true, voxuy: resultado.data });
     }
+    console.error('[Paradise] Erro ao enviar para Voxuy:', resultado.error, resultado.data);
     return res.status(resultado.status || 502).json({
       ok: false,
       error: resultado.error,
       details: resultado.data,
     });
   } catch (err) {
-    console.error(err);
+    console.error('[Paradise] Exceção:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

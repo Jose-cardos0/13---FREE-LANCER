@@ -94,20 +94,38 @@ Assim **api.securitysw.online** passa a apontar para sua VPS. A URL do webhook q
 
 ### Passo 1.3 – Enviar o projeto para o VPS
 
-No **seu computador** (onde está a pasta `voxuy-pix-integration`):
+**Opção A – Clonar do GitHub (recomendado)**
 
-1. Compacte a pasta do projeto (sem `node_modules` e sem `.env` com dados sensíveis se for subir por outro meio).
-2. Envie para o VPS usando **SCP** (PowerShell no Windows) ou **SFTP** (FileZilla, WinSCP). Exemplo pelo SCP, na pasta onde está o projeto:
+No **VPS** (já conectado com `ssh root@72.60.10.202`):
+
+1. Clone o repositório (o projeto está dentro da pasta `voxuy-pix-integration`):
+   ```bash
+   cd /root
+   git clone https://github.com/Jose-cardos0/13---FREE-LANCER.git
+   cd 13---FREE-LANCER/voxuy-pix-integration
+   ```
+
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+
+**Opção B – Enviar pelo SCP (do seu computador)**
+
+No **seu computador**, na pasta onde está `voxuy-pix-integration`:
    ```bash
    scp -r voxuy-pix-integration root@72.60.10.202:/root/
    ```
-3. No VPS, entre na pasta e instale as dependências:
+No VPS:
    ```bash
+   ssh root@72.60.10.202
    cd /root/voxuy-pix-integration
    npm install
    ```
 
-4. Crie o arquivo **.env** no VPS com suas credenciais (as mesmas que você já tem):
+---
+
+4. Crie o arquivo **.env** na pasta do projeto no VPS (se clonou do GitHub, você já está em `13---FREE-LANCER/voxuy-pix-integration`):
    ```bash
    nano .env
    ```
@@ -120,15 +138,16 @@ No **seu computador** (onde está a pasta `voxuy-pix-integration`):
    ```
    Salve (Ctrl+O, Enter, Ctrl+X).
 
+   **Importante:** Não commite o `.env` com tokens reais no GitHub. Use o `.gitignore` para ignorar `.env`; no servidor, crie o `.env` manualmente como acima.
+
 ---
 
 ### Passo 1.4 – Rodar a aplicação em segundo plano (PM2)
 
-Para o servidor Node continuar rodando e reiniciar sozinho após reinicialização:
+Na **pasta do projeto** no VPS (se clonou do GitHub: `cd /root/13---FREE-LANCER/voxuy-pix-integration`; se enviou por SCP: `cd /root/voxuy-pix-integration`):
 
 ```bash
 sudo npm install -g pm2
-cd /root/voxuy-pix-integration
 pm2 start src/webhook-server.js --name voxuy-webhook
 pm2 save
 pm2 startup
@@ -194,21 +213,22 @@ https://api.securitysw.online/webhook/voxuy/paradise
 1. Acesse o painel: **multi.paradisepags.com** (ou o que a Paradise indicar).
 2. Faça login com sua conta de loja.
 
-### Passo 2.2 – Onde configurar a URL de postback
+### Passo 2.2 – Onde configurar a URL de postback (webhook)
 
-A Paradise pode aceitar a URL de postback em **dois** lugares (depende do que o painel oferecer):
+No painel da Paradise a configuração fica em **Integrações**, no card **Webhooks (Postbacks)**:
 
-**Opção A – URL global de notificação (Configurações / API)**  
-1. Vá em **Configurações** ou **Configurações e API**.  
-2. Procure por **URL de notificação**, **Webhook**, **Postback** ou **URL de retorno**.  
-3. Coloque exatamente:
-   ```text
-   https://api.securitysw.online/webhook/voxuy/paradise
-   ```
-4. Salve.
+1. No **menu lateral esquerdo**, clique em **Integrações** (ícone de engrenagem).
+2. Na página de integrações, localize o card **Webhooks (Postbacks)** — onde diz “Configure URLs para receber notificações em tempo real sobre os eventos de suas transações”.
+3. Clique no botão **Adicionar/Gerenciar Webhooks**.
+4. Adicione uma nova URL de webhook e preencha:
+   - **URL:**  
+     ```text
+     https://api.securitysw.online/webhook/voxuy/paradise
+     ```
+   - **Eventos:** marque pelo menos **approved** (aprovado) e **pending** (pendente), para que a Paradise avise quando um PIX for gerado (pendente) e quando for pago (aprovado). Inclua outros eventos se quiser (ex.: refunded).
+5. Salve.
 
-**Opção B – Por transação (ao criar via API)**  
-Se você cria a transação pela **API** da Paradise, no body do `POST /api/v1/transaction.php` inclua:
+**Se você criar transações pela API** da Paradise, também pode enviar a URL por transação no body do `POST /api/v1/transaction.php`:
 ```json
 "postback_url": "https://api.securitysw.online/webhook/voxuy/paradise"
 ```
@@ -217,9 +237,17 @@ Se você cria a transação pela **API** da Paradise, no body do `POST /api/v1/t
 
 ### Passo 2.3 – Conferir dados do cliente (telefone)
 
-Para a Voxuy enviar WhatsApp, a Paradise precisa enviar o **telefone do cliente** no postback.  
-Na criação da transação (checkout ou API), o campo **customer.phone** deve estar preenchido (apenas números com DDD, ex.: `11999999999`).  
-Confirme no painel ou na documentação da Paradise que o checkout coleta telefone e que ele vem no postback.
+Para a Voxuy enviar WhatsApp, o **telefone do cliente** precisa chegar no postback.
+
+**Na documentação da API Paradise** ([Documentação da API - Paradise](https://pt.scribd.com/document/973845116/Documentacao-Da-API-Paradise)) o objeto **customer** na **criação da transação** é obrigatório e inclui:
+- **name** (nome)
+- **email** (e-mail)
+- **document** (CPF/CNPJ, apenas números)
+- **phone** (telefone com DDD, **apenas números** — ex.: `11999999999`)
+
+Ou seja: ao criar a transação (pelo checkout ou pela API), o campo **customer.phone** deve ser enviado. O postback costuma repassar os dados da transação (incluindo o customer), então o telefone tende a vir no payload que a Paradise envia para sua URL — nosso servidor já mapeia `customer.phone` e `phone` no endpoint `/webhook/voxuy/paradise`.
+
+**O que fazer:** (1) Garanta que seu checkout ou sua chamada à API Paradise sempre envie **customer.phone** ao criar a transação. (2) Se após o teste o WhatsApp não disparar, confira nos logs do servidor (`pm2 logs voxuy-webhook`) se o telefone está vindo no body do postback; em último caso, consulte o suporte da Paradise para confirmar a estrutura exata do payload do webhook.
 
 ---
 
@@ -291,3 +319,42 @@ No chat, marque o **produto** e o **evento de API/Customizado** que você criou,
    No servidor: `ssh root@72.60.10.202`  
    Depois: `pm2 logs voxuy-webhook`  
    Veja se as requisições chegam e se há erros.
+
+---
+
+## Depois de gerar o PIX: ver se o payload chegou e a Voxuy enviou a mensagem
+
+Quando você **gera o QR code PIX** na Paradise (tela “Pagamento Gerado!”), a Paradise pode enviar um postback para sua API. Siga estes passos para conferir se chegou e se a Voxuy disparou o WhatsApp.
+
+### 1. Ver se o payload chegou na sua API
+
+1. Conecte na VPS:
+   ```bash
+   ssh root@72.60.10.202
+   ```
+2. Abra os logs da aplicação (deixe aberto enquanto testa):
+   ```bash
+   pm2 logs voxuy-webhook
+   ```
+3. Gere um PIX na Paradise (ou use um que acabou de gerar). A Paradise deve chamar:
+   `https://api.securitysw.online/webhook/voxuy/paradise`
+4. Nos logs você deve ver:
+   - **`[Paradise] Postback recebido:`** seguido do JSON que a Paradise enviou (aqui você vê o payload completo).
+   - Se aparecer **`[Paradise] Enviado para Voxuy com sucesso. Telefone: +55...`** → sua API recebeu o postback e repassou para a Voxuy.
+   - Se aparecer **`[Paradise] Erro ao enviar para Voxuy:`** → o payload chegou, mas algo falhou ao enviar para a Voxuy (ex.: telefone faltando, token/planId inválido).
+
+**Se não aparecer nenhuma linha quando o PIX é gerado:**
+
+- Confirme na Paradise: **Integrações** → **Webhooks (Postbacks)** → a URL cadastrada é exatamente `https://api.securitysw.online/webhook/voxuy/paradise` e os eventos incluem **pending** (e **approved** se quiser quando pagar).
+- Às vezes o postback é enviado só quando o pagamento muda de status (ex.: aprovado). Teste também **pagando** o PIX (ou use um valor simbólico) e veja se o log aparece.
+- Verifique se o servidor está no ar: `pm2 status` (voxuy-webhook deve estar “online”) e teste no navegador: https://api.securitysw.online/health
+
+### 2. Fazer a Voxuy enviar a mensagem
+
+Para a Voxuy disparar o WhatsApp:
+
+1. **Telefone no payload:** o postback da Paradise precisa trazer o telefone do cliente (`customer.phone` ou `phone`). Nos logs, confira se no JSON aparece um número. Se não aparecer, o checkout/API da Paradise precisa enviar **customer.phone** ao criar a transação.
+2. **Funil na Voxuy:** na Voxuy, o **evento/plano** que você configurou deve ter um **funil de mensagens** ativo (pelo menos uma mensagem). O número usado será o que vier no payload (normalizado para +55...).
+3. **Após o postback:** quando sua API envia para a Voxuy com sucesso (log “Enviado para Voxuy com sucesso”), a Voxuy agenda o funil para aquele telefone. A mensagem pode levar alguns segundos ou minutos conforme o agendamento do funil.
+
+**Resumo:** Gere o PIX → veja em `pm2 logs voxuy-webhook` se saiu “Postback recebido” e “Enviado para Voxuy com sucesso” → confira no WhatsApp do número que está no payload se a mensagem do funil chegou. Se o payload não chegar, revise a URL do webhook na Paradise. Se chegar mas não disparar WhatsApp, confira telefone no payload e funil na Voxuy.
