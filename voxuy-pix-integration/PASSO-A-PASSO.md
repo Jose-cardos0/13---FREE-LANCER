@@ -260,27 +260,30 @@ Você já fez a maior parte na primeira conversa. Só conferir:
 ### Passo 3.1 – Produto e evento (Automações → API)
 
 1. Na Voxuy: **Automações** → **API**.  
-2. Produto e evento já criados (ID do produto: 1155934).  
-3. Se for usar **evento personalizado**, anote o **ID do evento** e coloque no `.env` do servidor:
+2. Produto e evento já criados (ID do **produto**: 1155934).  
+3. **ID do evento** é diferente do ID do produto: é o código do **evento** (funil) que você criou dentro do produto. Se você usa evento personalizado, anote esse **ID do evento** na Voxuy e coloque no `.env`:
    ```env
-   VOXUY_CUSTOM_EVENT_ID=63
+   VOXUY_CUSTOM_EVENT_ID=1155934
    ```
-   (substitua pelo ID real.)
+   (use o ID real do seu **evento**; se o seu evento tiver outro número, troque. Se não usar evento customizado, pode remover ou comentar essa linha.)
+
+   **Seu `.env` já está com os dados da Voxuy (webhook URL, token, plan ID e, se usar, custom event ID).** Não é preciso alterar nada aí para o fluxo funcionar.
 
 ### Passo 3.2 – Funil de mensagens
 
 1. No evento escolhido, cadastre as mensagens do funil (textos, horários, variáveis).  
 2. Use as variáveis da venda (nome, valor, **link do PIX**, etc.) que a API envia – por exemplo campos do **metadata** ou os que a Voxuy disponibiliza para “Venda → Campo metadata (API)”.
 
-### Passo 3.3 – Integração API Voxuy (URL e Token)
+### Passo 3.3 – Integração API Voxuy (só conferir; não é onde você coloca sua URL)
 
-1. **Configurações** (ícone engrenagem) → **Integrações** → **API VOXUY**.  
-2. Confirme:
-   - **URL para webhook:**  
-     `https://sistema.voxuy.com/api/bc608452-e9b7-4213-9ee3-2ea983bd995e/webhooks/voxuy/transaction`
-   - **Token API:** o mesmo que está no seu `.env` no VPS.
+**Resumo:** A URL do **seu** servidor (`https://api.securitysw.online/...`) você coloca só na **Paradise**. Na **Voxuy** você não coloca sua URL — só confere os dados que a **própria Voxuy** mostra (e que já estão no seu `.env`).
 
-Não precisa colocar nenhuma URL da *sua* parte aqui: **quem chama a Voxuy é o seu servidor**, usando essa URL e esse token.
+| Onde | O que você faz |
+|------|-----------------|
+| **Paradise** (Integrações → Webhooks) | Você **coloca** a URL do seu servidor: `https://api.securitysw.online/webhook/voxuy/paradise` — para a Paradise **chamar** sua API quando o PIX for gerado. |
+| **Voxuy** (Configurações → Integrações → API VOXUY) | Você **não coloca** nenhuma URL sua. Só **confere** o que está na tela: a “URL para webhook” e o “Token API” são dados **da Voxuy** (que seu servidor usa para **enviar** os dados para ela). O seu `.env` no VPS já tem esses mesmos valores. |
+
+Na Voxuy: **Configurações** (engrenagem) → **Integrações** → **API VOXUY**. Lá aparecem a URL da Voxuy e o Token. Só confira se são os mesmos do seu `.env` (webhook URL e token). **Não** digite a URL api.securitysw.online na Voxuy — essa URL fica só na Paradise.
 
 ### Passo 3.4 – Plano
 

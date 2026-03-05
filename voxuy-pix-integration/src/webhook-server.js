@@ -27,31 +27,33 @@ app.use(express.json());
 function mapearParadiseParaVoxuy(payload) {
   const customer = payload.customer || {};
   const phone = normalizarTelefone(
-    payload.phone ?? customer.phone ?? payload.clientPhoneNumber
+    payload.phone ?? payload.customer_phone ?? payload.telephone ?? customer.phone ?? customer.cell_phone ?? customer.telephone ?? payload.clientPhoneNumber
   );
-  const amount = payload.amount ?? payload.value;
-  const statusParadise = (payload.action || payload.status || '').toUpperCase();
+  const amount = payload.amount ?? payload.amount_cents ?? payload.value ?? payload.order_value ?? payload.total;
+  const statusParadise = (payload.raw_status ?? payload.action ?? payload.status ?? '').toUpperCase();
 
   let statusVoxuy = payload.status != null ? Number(payload.status) : STATUS.PENDENTE;
   if (statusParadise === 'APPROVED' || statusParadise === 'PAID' || statusParadise === 'APROVADO') {
     statusVoxuy = STATUS.PAGAMENTO_APROVADO;
   } else if (statusParadise === 'DENIED' || statusParadise === 'CANCELLED' || statusParadise === 'CANCELADO') {
     statusVoxuy = STATUS.CANCELADO;
+  } else if (statusParadise === 'PENDING') {
+    statusVoxuy = STATUS.PENDENTE;
   }
 
   return {
-    id: payload.reference ?? payload.id ?? payload.transaction_id ?? payload.transactionId,
+    id: payload.store_reference ?? payload.reference ?? payload.id ?? payload.transaction_id ?? payload.transactionId,
     clientPhoneNumber: phone,
-    clientName: payload.name ?? customer.name ?? payload.clientName,
-    clientEmail: payload.email ?? customer.email ?? payload.clientEmail,
+    clientName: payload.name ?? customer.name ?? payload.customer_name ?? payload.clientName,
+    clientEmail: payload.email ?? customer.email ?? payload.customer_email ?? payload.clientEmail,
     clientDocument: payload.document ?? customer.document ?? payload.clientDocument,
     value: amount,
-    totalValue: payload.totalValue ?? payload.total ?? amount,
-    pixQrCode: payload.pixQrCode ?? payload.qr_code ?? payload.qrCode ?? payload.copiaECola ?? payload.pix?.qrCode ?? payload.pix_copy_paste,
-    pixUrl: payload.pixUrl ?? payload.pix_url ?? payload.pixLink ?? payload.link ?? payload.pix?.url ?? payload.payment_url,
+    totalValue: payload.totalValue ?? payload.total ?? payload.amount ?? amount,
+    pixQrCode: payload.pix_code ?? payload.pixQrCode ?? payload.qr_code ?? payload.qrCode ?? payload.copiaECola ?? payload.pix?.qrCode ?? payload.pix_copy_paste,
+    pixUrl: payload.pix_url ?? payload.pixUrl ?? payload.pixLink ?? payload.link ?? payload.pix?.url ?? payload.payment_url,
     status: statusVoxuy,
     paymentType: PAYMENT_TYPE.PIX,
-    date: payload.date ?? payload.created_at ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
+    date: payload.timestamp ?? payload.date ?? payload.created_at ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
     metadata: payload.metadata ?? payload.meta ?? (payload.description ? { description: payload.description } : undefined),
   };
 }
@@ -176,6 +178,7 @@ app.post('/webhook/voxuy/paradise', async (req, res) => {
       return res.status(200).json({ ok: true, voxuy: resultado.data });
     }
     console.error('[Paradise] Erro ao enviar para Voxuy:', resultado.error, resultado.data);
+    console.error('[Paradise] Body mapeado (para debug):', JSON.stringify(body, null, 2));
     return res.status(resultado.status || 502).json({
       ok: false,
       error: resultado.error,

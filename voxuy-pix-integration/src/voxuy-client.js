@@ -137,6 +137,17 @@ function montarBody(transacao) {
  * @param {string} [webhookUrl] - URL do webhook (usa config se não informado)
  * @returns {Promise<{ success: boolean, data?: object, error?: string, status?: number }>}
  */
+/**
+ * Remove chaves com valor null ou undefined do objeto (para não enviar à Voxuy e evitar "Conteúdo inválido").
+ */
+function removerVazios(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v != null && v !== '') out[k] = v;
+  }
+  return out;
+}
+
 async function enviarTransacao(transacao, webhookUrl = config.webhookUrl) {
   const body = montarBody(transacao);
 
@@ -147,13 +158,15 @@ async function enviarTransacao(transacao, webhookUrl = config.webhookUrl) {
     };
   }
 
+  const bodyLimpo = removerVazios(body);
+
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(bodyLimpo),
     });
 
     const data = await response.json().catch(() => ({}));
