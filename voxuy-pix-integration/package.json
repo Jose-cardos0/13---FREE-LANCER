@@ -1,0 +1,17 @@
+{
+  "name": "voxuy-pix-integration",
+  "version": "1.0.0",
+  "description": "Integração API Voxuy para envio de cobranças PIX na automação WhatsApp",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/webhook-server.js",
+    "send": "node src/send-example.js",
+    "dev": "node --watch src/webhook-server.js"
+  },
+  "keywords": ["voxuy", "pix", "webhook", "whatsapp"],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
