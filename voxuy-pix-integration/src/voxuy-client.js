@@ -95,8 +95,8 @@ function montarBody(transacao) {
   const body = {
     apiToken: transacao.apiToken || config.apiToken,
     planId: planId || config.planId,
-    paymentType: Number(paymentType),
-    status: Number(status),
+    paymentType: Number.isFinite(Number(paymentType)) ? Number(paymentType) : 99,
+    status: Number.isFinite(Number(status)) ? Number(status) : 99,
     id: id ?? undefined,
     value: valueInt,
     freight: freightInt,

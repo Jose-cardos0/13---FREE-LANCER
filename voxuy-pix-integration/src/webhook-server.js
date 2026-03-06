@@ -33,8 +33,10 @@ function mapearParadiseParaVoxuy(payload) {
   const statusParadise = (payload.raw_status ?? payload.action ?? payload.status ?? '').toUpperCase();
 
   let statusVoxuy = 99;
-  if (payload.status != null) statusVoxuy = Number(payload.status);
-  else if (statusParadise === 'APPROVED' || statusParadise === 'PAID' || statusParadise === 'APROVADO') {
+  const statusNum = payload.status != null ? Number(payload.status) : NaN;
+  if (Number.isFinite(statusNum)) {
+    statusVoxuy = statusNum;
+  } else if (statusParadise === 'APPROVED' || statusParadise === 'PAID' || statusParadise === 'APROVADO') {
     statusVoxuy = STATUS.PAGAMENTO_APROVADO;
   } else if (statusParadise === 'DENIED' || statusParadise === 'CANCELLED' || statusParadise === 'CANCELADO') {
     statusVoxuy = STATUS.CANCELADO;
