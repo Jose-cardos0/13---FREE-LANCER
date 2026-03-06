@@ -11,7 +11,7 @@
 
 require('dotenv').config();
 const express = require('express');
-const { enviarTransacao, STATUS, PAYMENT_TYPE } = require('./voxuy-client');
+const { enviarTransacao, STATUS } = require('./voxuy-client');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,13 +32,14 @@ function mapearParadiseParaVoxuy(payload) {
   const amount = payload.amount ?? payload.amount_cents ?? payload.value ?? payload.order_value ?? payload.total;
   const statusParadise = (payload.raw_status ?? payload.action ?? payload.status ?? '').toUpperCase();
 
-  let statusVoxuy = payload.status != null ? Number(payload.status) : STATUS.PENDENTE;
-  if (statusParadise === 'APPROVED' || statusParadise === 'PAID' || statusParadise === 'APROVADO') {
+  let statusVoxuy = 99;
+  if (payload.status != null) statusVoxuy = Number(payload.status);
+  else if (statusParadise === 'APPROVED' || statusParadise === 'PAID' || statusParadise === 'APROVADO') {
     statusVoxuy = STATUS.PAGAMENTO_APROVADO;
   } else if (statusParadise === 'DENIED' || statusParadise === 'CANCELLED' || statusParadise === 'CANCELADO') {
     statusVoxuy = STATUS.CANCELADO;
   } else if (statusParadise === 'PENDING') {
-    statusVoxuy = STATUS.PENDENTE;
+    statusVoxuy = 99;
   }
 
   return {
@@ -52,7 +53,7 @@ function mapearParadiseParaVoxuy(payload) {
     pixQrCode: payload.pix_code ?? payload.pixQrCode ?? payload.qr_code ?? payload.qrCode ?? payload.copiaECola ?? payload.pix?.qrCode ?? payload.pix_copy_paste,
     pixUrl: payload.pix_url ?? payload.pixUrl ?? payload.pixLink ?? payload.link ?? payload.pix?.url ?? payload.payment_url,
     status: statusVoxuy,
-    paymentType: PAYMENT_TYPE.PIX,
+    paymentType: 99,
     date: payload.timestamp ?? payload.date ?? payload.created_at ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
     metadata: (() => {
       const base = payload.metadata ?? payload.meta ?? {};
@@ -80,8 +81,8 @@ function mapearParaVoxuy(payload) {
     totalValue: payload.totalValue ?? payload.total ?? payload.value ?? payload.amount,
     pixQrCode: payload.pixQrCode ?? payload.qrCode ?? payload.copiaECola ?? payload.pix?.qrCode,
     pixUrl: payload.pixUrl ?? payload.pixLink ?? payload.pix?.url ?? payload.link,
-    status: payload.status != null ? Number(payload.status) : STATUS.PENDENTE,
-    paymentType: PAYMENT_TYPE.PIX,
+    status: payload.status != null ? Number(payload.status) : 99,
+    paymentType: 99,
     date: payload.date ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
     metadata: payload.metadata ?? payload.meta ?? (payload.customId ? { customId: payload.customId } : undefined),
   };
@@ -139,7 +140,7 @@ app.post('/webhook/voxuy', async (req, res) => {
  */
 app.post('/webhook/voxuy/pix', async (req, res) => {
   try {
-    const body = mapearParaVoxuy({ ...req.body, paymentType: PAYMENT_TYPE.PIX, status: STATUS.PENDENTE });
+    const body = mapearParaVoxuy({ ...req.body, paymentType: 99, status: 99 });
     if (!body.clientPhoneNumber) {
       return res.status(400).json({
         ok: false,

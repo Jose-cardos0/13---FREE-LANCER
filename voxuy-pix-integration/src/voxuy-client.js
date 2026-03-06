@@ -60,8 +60,8 @@ function montarBody(transacao) {
     totalValue,
     freight,
     freightType,
-    paymentType = PAYMENT_TYPE.PIX,
-    status = STATUS.PENDENTE,
+    paymentType = 99,
+    status = 99,
     customEvent,
     clientPhoneNumber,
     clientName,
@@ -210,8 +210,8 @@ async function enviarTransacao(transacao, webhookUrl = config.webhookUrl) {
 async function enviarCobrancaPix(opts) {
   return enviarTransacao({
     ...opts,
-    paymentType: PAYMENT_TYPE.PIX,
-    status: opts.status != null ? opts.status : STATUS.PENDENTE,
+    paymentType: 99,
+    status: opts.status != null ? opts.status : 99,
   });
 }
 

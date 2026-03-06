@@ -155,6 +155,14 @@ pm2 startup
 
 Anote: a aplicação está escutando na **porta 3000** dentro do VPS.
 
+**Atualizar o código na VPS** (depois de dar push no GitHub):
+
+```bash
+cd /root/13---FREE-LANCER/voxuy-pix-integration
+git pull
+pm2 restart voxuy-webhook
+```
+
 ---
 
 ### Passo 1.5 – Configurar Nginx e HTTPS (Certbot)
@@ -367,3 +375,29 @@ Para a Voxuy disparar o WhatsApp:
 3. **Após o postback:** quando sua API envia para a Voxuy com sucesso (log “Enviado para Voxuy com sucesso”), a Voxuy agenda o funil para aquele telefone. A mensagem pode levar alguns segundos ou minutos conforme o agendamento do funil.
 
 **Resumo:** Gere o PIX → veja em `pm2 logs voxuy-webhook` se saiu “Postback recebido” e “Enviado para Voxuy com sucesso” → confira no WhatsApp do número que está no payload se a mensagem do funil chegou. Se o payload não chegar, revise a URL do webhook na Paradise. Se chegar mas não disparar WhatsApp, confira telefone no payload e funil na Voxuy.
+
+---
+
+## Por que a Voxuy não envia a mensagem no WhatsApp? (checklist)
+
+Sua API está enviando certo (log "Enviado para Voxuy com sucesso"), a mensagem aparece **agendada** na Fila, mas **Enviadas hoje: 0** e nada cai no WhatsApp. As causas mais comuns:
+
+### 1. Chat em aquecimento (a mais comum)
+
+Se na Fila de mensagens aparecer **"O chat Chat #1 está em aquecimento"**: a Voxuy **não dispara** as mensagens até o aquecimento terminar (política do WhatsApp). As mensagens ficam só agendadas. **O que fazer:** esperar o fim do aquecimento ou, no banner, clicar no link para desativar o aquecimento (se a Voxuy permitir). Confirmar com o **suporte da Voxuy** quanto tempo falta e se há como desativar.
+
+### 2. Funil "Pix gerado" não vale para transações via API
+
+Às vezes a Voxuy trata transação **enviada pela API** como evento "API/Personalizado" e **não** aplica o funil de **Funil de conversão → Pix → Gerado**. A mensagem entra na fila mas o envio não dispara. **O que fazer:** perguntar ao **suporte da Voxuy**: "Transações que entram pela API com paymentType PIX e status pendente disparam o funil de conversão do evento 'Pix gerado'? Aqui as mensagens ficam agendadas mas não são enviadas."
+
+### 3. Plano / produto errado
+
+Confirmar na Voxuy que o plano `7e50b0e6-3554-4b10-84c4-0bc7d7` está vinculado ao **Produto01** e que o funil "Pix gerado" está configurado **nesse** produto, com Início ligado ao bloco de mensagem.
+
+### 4. Abrir ticket na Voxuy (recomendado)
+
+Envie para o suporte da Voxuy algo assim:
+
+*"Estou enviando transações pela API (webhook) com planId [código do plano], paymentType 7 (PIX), status 0 (pendente). A transação aparece no relatório e a mensagem na Fila (agendada), mas nenhuma mensagem é enviada para o WhatsApp (Enviadas hoje: 0). O funil de conversão do produto Produto01 para o evento 'Pix gerado' está configurado e ligado. O chat está em aquecimento ou há outra restrição que impeça o envio?"*
+
+Assim eles conseguem ver no sistema deles por que o envio não está saindo.
