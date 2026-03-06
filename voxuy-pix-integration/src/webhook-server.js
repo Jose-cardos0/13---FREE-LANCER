@@ -11,6 +11,7 @@
 
 require('dotenv').config();
 const express = require('express');
+const config = require('./config');
 const { enviarTransacao, STATUS } = require('./voxuy-client');
 
 const app = express();
@@ -56,6 +57,7 @@ function mapearParadiseParaVoxuy(payload) {
     pixUrl: payload.pix_url ?? payload.pixUrl ?? payload.pixLink ?? payload.link ?? payload.pix?.url ?? payload.payment_url,
     status: statusVoxuy,
     paymentType: 99,
+    customEvent: config.customEventId ?? undefined,
     date: payload.timestamp ?? payload.date ?? payload.created_at ?? payload.createdAt ?? payload.dataCriacao ?? new Date().toISOString(),
     metadata: (() => {
       const base = payload.metadata ?? payload.meta ?? {};
